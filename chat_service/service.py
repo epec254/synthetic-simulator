@@ -11,10 +11,11 @@ class ChatService:
         self,
         chat_agent_callable: Callable[[List[Dict[str, str]]], Dict[str, Any]],
         question_generator_callable: Callable[[str, int, Optional[str], Optional[str]], List[Dict[str, str]]],
+        get_context_from_chat_agent_response: Callable[[Dict[str, Any]], str],
         max_turns: int,
         model: str = "gpt-3.5-turbo",
         temperature: float = 1.0,
-        content_for_questions: str = "Python is a popular programming language known for its readability and extensive library support",
+        initial_content: str = "Python is a popular programming language known for its readability and extensive library support",
         output_file: str = "conversation_history.jsonl",
         agent_description: Optional[str] = None,
         question_guidelines: Optional[str] = None
@@ -25,20 +26,22 @@ class ChatService:
         Args:
             chat_agent_callable: Function that takes messages array and returns chat completion response
             question_generator_callable: Function that implements question generation API
+            get_context_from_chat_agent_response: Function that extracts context from chat agent response
             max_turns: Maximum number of conversation turns
             model: The model to use for chat completion
             temperature: Sampling temperature between 0 and 2
-            content_for_questions: Content to generate questions from
+            initial_content: Initial content to generate first questions from
             output_file: Path to save the conversation history
             agent_description: Optional description for question generation
             question_guidelines: Optional guidelines for question generation
         """
         self.chat_agent_callable = chat_agent_callable
         self.question_generator_callable = question_generator_callable
+        self.get_context_from_chat_agent_response = get_context_from_chat_agent_response
         self.max_turns = max_turns
         self.model = model
         self.temperature = temperature
-        self.content_for_questions = content_for_questions
+        self.current_content = initial_content
         self.output_file = output_file
         self.agent_description = agent_description
         self.question_guidelines = question_guidelines
@@ -69,7 +72,7 @@ class ChatService:
         # If we've used all questions or haven't fetched any yet, get new ones
         if not self.questions or self.current_question_index >= len(self.questions):
             self.questions = self.question_generator_callable(
-                content=self.content_for_questions,
+                content=self.current_content,
                 num_questions=self.max_turns,
                 agent_description=self.agent_description,
                 question_guidelines=self.question_guidelines
@@ -110,6 +113,9 @@ class ChatService:
             "role": "assistant",
             "content": assistant_message
         })
+
+        # Extract context from response for next questions
+        self.current_content = self.get_context_from_chat_agent_response(response_data)
 
         # Save this turn to the JSONL file
         self.save_conversation_turn()
