@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "chat-service"
+version = "0.1.0"
+description = "A multi-turn chat service that interacts with Chat Agent API"
+authors = ["User"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.32.3"
+fastapi = "^0.115.6"
+uvicorn = "^0.34.0"
+databricks-agents = "^0.13.0"
+databricks-sdk = {extras = ["openai"], version = "^0.40.0"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
