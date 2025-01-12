@@ -186,7 +186,7 @@ def chat_agent_callable(messages: List[Dict[str, str]]) -> Dict[str, Any]:
 
 #### 2. question_generator_callable
 
-> **Note:** You should not need to modify this callable - it's built to work with Databricks' Agent Evaluation Synthetic Generation API. However, you can replace it with your own function if you want to generate the next turn of conversation using a custom LLM call or different approach.
+> **Note:** You should not need to modify the default implentation of this callable in `simulator_service.synthetic_generation` - it's built to work with Databricks' Agent Evaluation Synthetic Generation API. However, you can replace it with your own function if you want to generate the next turn of conversation using a custom LLM call or different approach.
 
 ```python
 def question_generator_callable(context: str, agent_description: str) -> List[Dict[str, str]]:
@@ -207,7 +207,7 @@ def question_generator_callable(context: str, agent_description: str) -> List[Di
 
 This callable extracts data from the agent's last response, which is then used as input to the Synthetic Generation API to generate the next conversation turn. 
 
-We provide two sample implementations in `simulator_service.context_generators`:
+We provide two example implementations in `simulator_service.context_generators`:
 - `get_agent_response_from_trace`: Uses just the agent's final response text
 - `get_all_tool_outputs_from_agent_trace`: Uses the outputs from all tools the agent called, providing richer context
 
