@@ -161,13 +161,7 @@ chat_service = SyntheticDataSimulatorService(
 simulator_service.start_conversation()
 ```
 
-## Examples
-
-The root directory contains:
-* `conversation_simulator_demo.py`: Complete example with Databricks integration
-* `fc_agent.py`: Sample function-calling agent implementation
-* `model_utils.py`: Utilities for MLflow model invocation and trace capture
-
+# API documentation
 ## Required Callable Signatures
 
 The service requires three callable functions with specific signatures:
