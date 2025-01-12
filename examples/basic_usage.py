@@ -11,6 +11,8 @@ from databricks.rag_eval.datasets.managed_evals import _get_managed_evals_client
 from databricks.rag_eval.entities import Document
 from databricks.rag_eval.context import RealContext
 from dotenv import load_dotenv
+import mlflow
+from mlflow.models.resources import DatabricksServingEndpoint
 
 # Load environment variables
 load_dotenv()
@@ -40,7 +42,9 @@ def example_chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
 
     # Generate a more detailed response for context extraction
     response = f"This is a real response to: {last_message['content']}. "
-    response += "The pants are indeed in the basement, and they are a vibrant shade of green. "
+    response += (
+        "The pants are indeed in the basement, and they are a vibrant shade of green. "
+    )
     response += "They are hanging on a wooden rack near the washing machine."
 
     return {
@@ -104,17 +108,83 @@ def get_context_from_chat_agent_response(response_data: Dict[str, Any]) -> str:
     """
     # Get the assistant's message content
     content = response_data["choices"][0]["message"]["content"]
-    
+
     # For this example, we'll use the entire response as context
     # In a real implementation, you might want to process or extract specific information
     return content
 
 
+from fc_agent import DEFAULT_CONFIG
+from model_utils import load_and_invoke_model
+
+import mlflow
+import mlflow.deployments
+import mlflow.pyfunc.context as pyfunc_context
+import mlflow.tracing.fluent
+import mlflow.utils.logging_utils
+import uuid
+
+import re
+
+_FAIL_TO_GET_TRACE_WARNING_MSG = re.compile(
+    r"Failed to get trace from the tracking store"
+)
+
+
+def log_model(
+    agent_code_file: str, agent_config: dict
+) -> mlflow.models.model.ModelInfo:
+    """Log the model to MLflow and return the model info.
+
+    Args:
+        agent_code_file: Path to the agent code file
+        agent_config: Configuration dictionary for the agent
+
+    Returns:
+        ModelInfo: Information about the logged model
+    """
+    return mlflow.pyfunc.log_model(
+        python_model=agent_code_file,
+        artifact_path="agent",
+        model_config=agent_config,
+        resources=[
+            DatabricksServingEndpoint(endpoint_name=agent_config["endpoint_name"])
+        ],
+        input_example={
+            "messages": [{"role": "user", "content": "What is lakehouse monitoring?"}]
+        },
+        pip_requirements=[
+            "databricks-sdk[openai]",
+            "mlflow",
+            "databricks-agents",
+            "backoff",
+        ],
+    )
+
+
 def main():
     # Create output directory
     output_dir = Path("output")
+    output_dir.mkdir(exist_ok=True)
     output_file = output_dir / "conversation_history.jsonl"
 
+    model_info = log_model(
+        agent_code_file=str(Path(__file__).parent / "fc_agent.py"),
+        agent_config=DEFAULT_CONFIG,
+    )
+
+    # invoke the model
+    model_input = {
+        "messages": [{"role": "user", "content": "What is lakehouse monitoring?"}]
+    }
+
+    raw_model_output, output_trace = load_and_invoke_model(model_info, model_input)
+
+    print(f"Model URI: {model_info.model_uri}")
+    print(f"Trace: {output_trace}")
+    print(f"Output: {raw_model_output}")
+
+    exit()
     # Create chat service instance with callable implementations
     chat_service = ChatService(
         chat_agent_callable=example_chat_completion,
