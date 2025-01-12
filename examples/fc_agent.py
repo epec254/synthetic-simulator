@@ -14,7 +14,7 @@ import backoff  # for exponential backoff on LLM rate limits
 
 # Default configuration for the agent.
 DEFAULT_CONFIG = {
-    "endpoint_name": "databricks-meta-llama-3-1-70b-instruct",
+    "endpoint_name": "ep-gpt4o-new",
     "temperature": 0.01,
     "max_tokens": 1000,
     "system_prompt": """You are a helpful assistant that answers questions about Databricks. Questions unrelated to Databricks are irrelevant.

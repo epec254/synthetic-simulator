@@ -6,19 +6,20 @@ from typing import Dict, Any, Optional, List, Callable
 from pathlib import Path
 import json
 
+
 class ChatService:
     def __init__(
         self,
         chat_agent_callable: Callable[[List[Dict[str, str]]], Dict[str, Any]],
-        question_generator_callable: Callable[[str, int, Optional[str], Optional[str]], List[Dict[str, str]]],
+        question_generator_callable: Callable[
+            [str, int, Optional[str], Optional[str]], List[Dict[str, str]]
+        ],
         get_context_from_chat_agent_response: Callable[[Dict[str, Any]], str],
         max_turns: int,
-        model: str = "gpt-3.5-turbo",
-        temperature: float = 1.0,
         initial_content: str = "Python is a popular programming language known for its readability and extensive library support",
         output_file: str = "conversation_history.jsonl",
         agent_description: Optional[str] = None,
-        question_guidelines: Optional[str] = None
+        question_guidelines: Optional[str] = None,
     ):
         """
         Initialize the ChatService.
@@ -28,8 +29,6 @@ class ChatService:
             question_generator_callable: Function that implements question generation API
             get_context_from_chat_agent_response: Function that extracts context from chat agent response
             max_turns: Maximum number of conversation turns
-            model: The model to use for chat completion
-            temperature: Sampling temperature between 0 and 2
             initial_content: Initial content to generate first questions from
             output_file: Path to save the conversation history
             agent_description: Optional description for question generation
@@ -39,8 +38,6 @@ class ChatService:
         self.question_generator_callable = question_generator_callable
         self.get_context_from_chat_agent_response = get_context_from_chat_agent_response
         self.max_turns = max_turns
-        self.model = model
-        self.temperature = temperature
         self.current_content = initial_content
         self.output_file = output_file
         self.agent_description = agent_description
@@ -51,13 +48,11 @@ class ChatService:
 
     def save_conversation_turn(self):
         """Save the current conversation turn to the JSONL file."""
-        with open(self.output_file, 'a') as f:
+        with open(self.output_file, "a") as f:
             # Create a record with just the messages array
-            record = {
-                "messages": self.conversation_history.copy()
-            }
+            record = {"messages": self.conversation_history.copy()}
             json.dump(record, f)
-            f.write('\n')
+            f.write("\n")
 
     def get_next_question(self) -> str:
         """
@@ -65,7 +60,7 @@ class ChatService:
 
         Returns:
             str: The generated question
-        
+
         Raises:
             Exception: If the question generation fails
         """
@@ -75,16 +70,16 @@ class ChatService:
                 content=self.current_content,
                 num_questions=self.max_turns,
                 agent_description=self.agent_description,
-                question_guidelines=self.question_guidelines
+                question_guidelines=self.question_guidelines,
             )
             self.current_question_index = 0
-        
+
         # Get the next question and increment the index
         question = self.questions[self.current_question_index]["question"]
         self.current_question_index += 1
         return question
 
-    def call_chat_agent(self, question: str) -> str:
+    def call_chat_agent(self, question: str) -> Dict[str, Any]:
         """
         Send a question to the chat agent callable and get the response.
 
@@ -92,35 +87,33 @@ class ChatService:
             question: The question to ask the chat agent
 
         Returns:
-            str: The chat agent's response text
+            Dict[str, Any]: Dictionary containing the chat agent's response text and output trace
 
         Raises:
             Exception: If the chat completion fails
         """
         # Add the new question to conversation history
-        self.conversation_history.append({
-            "role": "user",
-            "content": question
-        })
+        self.conversation_history.append({"role": "user", "content": question})
 
         # Call the chat completion function with just the messages
-        response_data = self.chat_agent_callable(self.conversation_history)
-        
-        assistant_message = response_data["choices"][0]["message"]["content"]
-        
+        response = self.chat_agent_callable(self.conversation_history)
+
+        # Extract the message content and trace
+        assistant_message = response["outputs"]["choices"][0]["message"]["content"]
+        output_trace = response["output_trace"]
+
         # Add the assistant's response to conversation history
-        self.conversation_history.append({
-            "role": "assistant",
-            "content": assistant_message
-        })
+        self.conversation_history.append(
+            {"role": "assistant", "content": assistant_message}
+        )
 
         # Extract context from response for next questions
-        self.current_content = self.get_context_from_chat_agent_response(response_data)
+        self.current_content = self.get_context_from_chat_agent_response(response)
 
         # Save this turn to the JSONL file
         self.save_conversation_turn()
 
-        return assistant_message
+        return {"message": assistant_message, "trace": output_trace}
 
     def start_conversation(self) -> None:
         """
@@ -131,16 +124,18 @@ class ChatService:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Add initial system message
-        self.conversation_history = [{
-            "role": "system",
-            "content": "You are a helpful AI assistant engaging in a conversation."
-        }]
+        self.conversation_history = [
+            {
+                "role": "system",
+                "content": "You are a helpful AI assistant engaging in a conversation.",
+            }
+        ]
 
         for turn in range(self.max_turns):
-            try:
-                question = self.get_next_question()
-                print(f'Turn {turn + 1}: Asking question: {question}')
-                answer = self.call_chat_agent(question)
-                print(f'Answer: {answer}')
-            except Exception as e:
-                print(f'Error during turn {turn + 1}: {str(e)}')
+            # try:
+            question = self.get_next_question()
+            print(f"Turn {turn + 1}: Asking question: {question}")
+            answer = self.call_chat_agent(question)
+            print(f'Answer: {answer["message"]}')
+            # except Exception as e:
+            #     print(f"Error during turn {turn + 1}: {str(e)}")

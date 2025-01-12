@@ -27,7 +27,20 @@ def mock_chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
         model="gpt-3.5-turbo",
         messages=messages,
     )
-    return chat_completions(request)
+    response = chat_completions(request)
+    
+    # Create mock output trace
+    output_trace = {
+        "timestamp": "2025-01-12T11:49:10-08:00",
+        "model": "gpt-3.5-turbo",
+        "tokens": {"prompt": 100, "completion": 30},
+        "latency_ms": 200,
+    }
+    
+    return {
+        "outputs": response,
+        "output_trace": output_trace,
+    }
 
 
 def mock_question_generator(
@@ -59,7 +72,7 @@ def mock_context_extractor(response_data: Dict[str, Any]) -> str:
         str: Extracted context for generating next questions
     """
     # Get the assistant's message content
-    content = response_data["choices"][0]["message"]["content"]
+    content = response_data["outputs"]["choices"][0]["message"]["content"]
     
     # For mock implementation, use the entire response as context
     return content
