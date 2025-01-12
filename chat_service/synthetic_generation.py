@@ -27,9 +27,11 @@ def generate_next_question_using_context_from_previous_turn(
         List of dictionaries containing questions and their context
     """
 
-    question_guidelines = f"""Generate a question based on the provided context.  Questions should be short and in natural language as if a user wrote them.  For example, 
-Avoid this list of previously asked questions:
+    question_guidelines = f"""Generate a question based on the provided context.  Questions should be short and in natural language as if a user wrote them.  For example, instead of "What are the channels through which alerts can be sent in Databricks Lakehouse monitoring?" generate "what channels for alerts?" 
+Generate questions that are diverse and different from this list of previously asked questions:
 {previous_questions}"""
+
+    print(previous_questions)
 
     doc = Document(content=context_from_last_chat_turn, doc_uri="test.txt")
     questions = evals_client.generate_questions(

@@ -15,12 +15,10 @@ import mlflow
 from mlflow.models.resources import DatabricksServingEndpoint
 from fc_agent import DEFAULT_CONFIG
 from model_utils import invoke_model_with_trace
-
-
 from chat_service.context_generators import (
     get_all_tool_outputs_from_agent_trace,
+    get_agent_response_from_trace,
 )
-
 from chat_service.synthetic_generation import (
     generate_next_question_using_context_from_previous_turn,
 )
@@ -57,7 +55,7 @@ def log_model(
     )
 
 
-def build_chat_completion(
+def get_agent_callable(
     model_info: mlflow.models.model.ModelInfo,
 ) -> Callable[[List[Dict[str, str]]], Dict[str, Any]]:
     """
@@ -72,7 +70,7 @@ def build_chat_completion(
     # Load the model once when creating the completion function
     loaded_model = mlflow.pyfunc.load_model(model_info.model_uri)
 
-    def chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    def call_mlflow_logged_agent(messages: List[Dict[str, str]]) -> Dict[str, Any]:
         # print(messages)
         # Use invoke_model_uri_with_trace with the cached model's URI
         outputs, output_trace = invoke_model_with_trace(
@@ -85,10 +83,13 @@ def build_chat_completion(
             "output_trace": output_trace,
         }
 
-    return chat_completion
+    return call_mlflow_logged_agent
 
 
 def generate_based_on_tool_outputs():
+    """
+    Synthetically generates follow-up questions based on the outputs from all called tools.
+    """
     # Create output directory
     output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
@@ -99,15 +100,14 @@ def generate_based_on_tool_outputs():
         agent_config=DEFAULT_CONFIG,
     )
 
-    chat_completion_callable = build_chat_completion(model_info)
+    chat_completion_callable = get_agent_callable(model_info)
 
     chat_service = ChatService(
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_all_tool_outputs_from_agent_trace,
         max_turns=5,
-        # seed_question="what is lakehouse monitoring?",
-        seed_question="dsfdsds",
+        seed_question="what is lakehouse monitoring?",
         output_file=str(output_file),
         agent_description="A chat agent that answers questions about Databricks documentation.",
     )
@@ -123,6 +123,9 @@ def generate_based_on_tool_outputs():
 
 
 def generate_based_on_response():
+    """
+    Synthetically generates follow-up questions based on the agent's last response.
+    """
     # Create output directory
     output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
@@ -133,15 +136,14 @@ def generate_based_on_response():
         agent_config=DEFAULT_CONFIG,
     )
 
-    chat_completion_callable = build_chat_completion(model_info)
+    chat_completion_callable = get_agent_callable(model_info)
 
     chat_service = ChatService(
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
-        get_context_from_chat_agent_response_for_next_turn_callable=get_all_tool_outputs_from_agent_trace,
+        get_context_from_chat_agent_response_for_next_turn_callable=get_agent_response_from_trace,
         max_turns=5,
-        # seed_question="what is lakehouse monitoring?",
-        seed_question="what is yellow string",
+        seed_question="what is lakehouse monitoring?",
         output_file=str(output_file),
         agent_description="A chat agent that answers questions about Databricks documentation.",
     )
@@ -157,7 +159,8 @@ def generate_based_on_response():
 
 
 def main():
-    generate_based_on_tool_outputs()
+    # generate_based_on_tool_outputs()
+    generate_based_on_response()
 
 
 if __name__ == "__main__":

@@ -58,8 +58,18 @@ class ChatService:
     def save_conversation_turn(self):
         """Save the current conversation turn to the JSONL file."""
         with open(self.output_file, "a") as f:
-            # Create a record with just the messages array
-            record = {"messages": self.conversation_history.copy()}
+            # Create a record with messages array (excluding last assistant message) and separate assistant response
+            messages = (
+                self.conversation_history[:-1].copy()
+                if self.conversation_history
+                else []
+            )
+            record = {
+                "request": messages,
+                "response": (
+                    self.conversation_history[-1] if self.conversation_history else None
+                ),
+            }
             json.dump(record, f)
             f.write("\n")
 

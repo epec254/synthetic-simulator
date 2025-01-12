@@ -46,3 +46,17 @@ def get_all_tool_outputs_from_agent_trace(response_data: Dict[str, Any]) -> str:
     # 2. Add trace metadata to the context
     # 3. Filter or enhance the context based on model performance metrics
     return "\n".join(tool_outputs)
+
+
+def get_agent_response_from_trace(response_data: Dict[str, Any]) -> str:
+    """
+    Extract just the agent's response content from chat agent response.
+
+    Args:
+        response_data: Response data from chat agent containing outputs
+
+    Returns:
+        str: The agent's response content
+    """
+    outputs = response_data["outputs"]
+    return outputs["choices"][0]["message"]["content"]
