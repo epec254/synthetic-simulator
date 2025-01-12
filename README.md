@@ -32,7 +32,7 @@ cp .env.sample .env
 
 3. Run the example ([see Usage](#usage) for full documentation):
 ```bash
-python basic_usage.py
+python conversation_simulator_demo.py
 ```
 
 See the [Configuration](#configuration) section for detailed setup instructions.
@@ -101,7 +101,7 @@ MLFLOW_EXPERIMENT_NAME=/Users/<email>/chat-service-experiment  # Your MLflow exp
 
 ## Usage
 
-The easiest way to get started is to use `basic_usage.py` in the root directory. This example shows how to:
+The easiest way to get started is to use `conversation_simulator_demo.py` in the root directory. This example shows how to:
 1. Log your agent as an MLflow model
 2. Create the required callables using provided utility functions
 3. Set up and run the synthetic data generation
@@ -112,7 +112,7 @@ Additional example files in the root directory include:
 
 You can see example output in [`example_output.jsonl`](example_output.jsonl).
 
-For a complete working example with error handling and additional features, see `basic_usage.py`.
+For a complete working example with error handling and additional features, see `conversation_simulator_demo.py`.
 
 Here's a simplified version of the example:
 
@@ -159,7 +159,7 @@ chat_service.start_conversation()
 ## Examples
 
 The root directory contains:
-* `basic_usage.py`: Complete example with Databricks integration
+* `conversation_simulator_demo.py`: Complete example with Databricks integration
 * `fc_agent.py`: Sample function-calling agent implementation
 * `model_utils.py`: Utilities for MLflow model invocation and trace capture
 
@@ -236,7 +236,7 @@ The service provides default implementations for these callables in:
 - `chat_service.context_generators`: Contains `get_all_tool_outputs_from_agent_trace` and `get_agent_response_from_trace`
 - `chat_service.synthetic_generation`: Contains `generate_next_question_using_context_from_previous_turn`
 
-See `basic_usage.py` for complete implementation examples.
+See `conversation_simulator_demo.py` for complete implementation examples.
 
 ## Model Utilities
 
