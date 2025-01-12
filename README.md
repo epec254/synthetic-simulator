@@ -77,10 +77,14 @@ MLFLOW_EXPERIMENT_NAME=/Users/<email>/chat-service-experiment  # Your MLflow exp
 
 ## Usage
 
-The easiest way to get started is to use the example in `examples/basic_usage.py`. This example shows how to:
+The easiest way to get started is to use `basic_usage.py` in the root directory. This example shows how to:
 1. Log your agent as an MLflow model
 2. Create the required callables using provided utility functions
 3. Set up and run the synthetic data generation
+
+Additional example files in the root directory include:
+- `fc_agent.py`: Example implementation of a function calling agent
+- `model_utils.py`: Utility functions for model interaction
 
 Here's a simplified version of the example:
 
@@ -124,11 +128,11 @@ chat_service = SyntheticDataSimulatorService(
 chat_service.start_conversation()
 ```
 
-For a complete working example with error handling and additional features, see `examples/basic_usage.py`.
+For a complete working example with error handling and additional features, see `basic_usage.py`.
 
 ## Examples
 
-The `examples` directory contains:
+The root directory contains:
 * `basic_usage.py`: Complete example with Databricks integration
 * `fc_agent.py`: Sample function-calling agent implementation
 * `model_utils.py`: Utilities for MLflow model invocation and trace capture
@@ -206,13 +210,13 @@ The service provides default implementations for these callables in:
 - `chat_service.context_generators`: Contains `get_all_tool_outputs_from_agent_trace` and `get_agent_response_from_trace`
 - `chat_service.synthetic_generation`: Contains `generate_next_question_using_context_from_previous_turn`
 
-See `examples/basic_usage.py` for complete implementation examples.
+See `basic_usage.py` for complete implementation examples.
 
 ## Model Utilities
 
 > TODO: Add a version of `invoke_model_with_trace` that works with a Databricks Model Serving endpoint
 
-The service provides utility functions in `examples/model_utils.py` to help with model invocation and MLflow trace capture:
+The service provides utility functions in `model_utils.py` to help with model invocation and MLflow trace capture:
 
 ### invoke_model_with_trace
 

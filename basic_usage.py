@@ -191,6 +191,7 @@ def main():
     # We use a function-calling agent defined in fc_agent.py that queries databricks documentation through a keyword-based retriever tool.
     # You can replace this with your own agent implementation.
 
+    # Note: this configuration is specific to the code in the `fc_agent.py` file.  Your own agent will likely have a different configuration.
     agent_config = {
         "endpoint_name": "ep-gpt4o-new",  # replace with a Model Serving endpoint that supports Chat Completions.  Can be an external model e.g., OpenAI
         "temperature": 0.01,
