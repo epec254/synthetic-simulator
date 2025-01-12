@@ -1,44 +1,57 @@
 """
-Example usage of the ChatService with mock server.
+Example usage of the ChatService with mock server implementations.
 """
 
 import sys
 import os
 import time
 from chat_service import ChatService
-from mock_server.server import start_server
-import threading
-import requests
+from mock_server.server import (
+    generate_questions,
+    chat_completions,
+    ChatCompletionRequest,
+    QuestionGenerationRequest,
+    Document
+)
 from pathlib import Path
+from typing import Dict, Any, List
 
-def wait_for_server(url: str, max_retries: int = 5, retry_delay: float = 1.0):
-    """Wait for the server to start up."""
-    for _ in range(max_retries):
-        try:
-            requests.get(url)
-            return True
-        except requests.ConnectionError:
-            time.sleep(retry_delay)
-    return False
+def mock_chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    """
+    Mock chat completion using the mock server's implementation directly.
+    """
+    request = ChatCompletionRequest(
+        model="gpt-3.5-turbo",
+        messages=messages
+    )
+    return chat_completions(request)
+
+def mock_question_generator(
+    content: str,
+    num_questions: int,
+    agent_description: str = None,
+    question_guidelines: str = None
+) -> List[Dict[str, str]]:
+    """
+    Mock question generator using the mock server's implementation directly.
+    """
+    request = QuestionGenerationRequest(
+        doc=Document(content=content, doc_uri="mock_test.txt"),
+        num_questions=num_questions,
+        agent_description=agent_description,
+        question_guidelines=question_guidelines
+    )
+    return generate_questions(request)
 
 def main():
-    # Start mock server in a separate thread
-    server_thread = threading.Thread(target=start_server, daemon=True)
-    server_thread.start()
-
-    # Wait for the server to start
-    if not wait_for_server("http://127.0.0.1:8000/generate_questions"):
-        print("Failed to start mock server")
-        sys.exit(1)
-
     # Create output directory
     output_dir = Path("output")
-    output_file = output_dir / "conversation_history.jsonl"
+    output_file = output_dir / "mock_conversation_history.jsonl"
 
-    # Create chat service instance with mock server URLs
+    # Create chat service instance with mock implementations
     chat_service = ChatService(
-        chat_agent_url='http://127.0.0.1:8000/v1/chat/completions',
-        question_api_url='http://127.0.0.1:8000',
+        chat_agent_callable=mock_chat_completion,
+        question_generator_callable=mock_question_generator,
         max_turns=3,
         model="gpt-3.5-turbo",
         temperature=0.7,

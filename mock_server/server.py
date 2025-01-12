@@ -4,7 +4,7 @@ Mock server to simulate chat agent and question API endpoints using OpenAI's Cha
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Dict, Any
 import random
 import uvicorn
 from datetime import datetime
@@ -72,11 +72,10 @@ class QuestionGenerationRequest(BaseModel):
     agent_description: Optional[str] = None
     question_guidelines: Optional[str] = None
 
-@app.post("/generate_questions")
-async def generate_questions(request: QuestionGenerationRequest) -> List[SyntheticQuestion]:
-    """Mock endpoint for generating questions from content."""
+def generate_questions(request: QuestionGenerationRequest) -> List[Dict[str, str]]:
+    """Generate questions from content."""
     if not request.doc.content:
-        raise HTTPException(status_code=400, detail="Content is required")
+        raise ValueError("Content is required")
     
     # Use the sample content if it exists, otherwise generate generic questions
     if request.doc.content in SAMPLE_CONTENT:
@@ -84,46 +83,50 @@ async def generate_questions(request: QuestionGenerationRequest) -> List[Synthet
     else:
         # Generate generic questions if content not in samples
         questions = [
-            (f"Generic Question {i} about the content?", request.doc.content)
+            (f"Generic Question {i + 1} about: {request.doc.content}?", request.doc.content)
             for i in range(request.num_questions)
         ]
     
     return [
-        SyntheticQuestion(
-            question=q,
-            source_doc_uri=request.doc.doc_uri,
-            source_context=context
-        )
+        {
+            "question": q,
+            "source_doc_uri": request.doc.doc_uri,
+            "source_context": context
+        }
         for q, context in questions
     ]
 
-@app.post("/v1/chat/completions")
-async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResponse:
-    """Mock endpoint for chat completions API."""
+def chat_completions(request: ChatCompletionRequest) -> Dict[str, Any]:
+    """Generate chat completion response."""
     if not request.messages:
-        raise HTTPException(status_code=400, detail="Messages are required")
+        raise ValueError("Messages are required")
     
     # Get the last user message
     last_message = next((msg for msg in reversed(request.messages) if msg.role == "user"), None)
     if not last_message:
-        raise HTTPException(status_code=400, detail="No user message found")
+        raise ValueError("No user message found")
     
     # Generate a simple response
     response_content = f"This is a mock response to: {last_message.content}"
     
-    return ChatCompletionResponse(
-        model=request.model,
-        choices=[
-            Choice(
-                index=0,
-                message=Message(
-                    role="assistant",
-                    content=response_content
-                )
-            )
-        ],
-        usage=Usage()
-    )
+    return {
+        "choices": [{
+            "message": {
+                "role": "assistant",
+                "content": response_content
+            }
+        }]
+    }
+
+@app.post("/generate_questions")
+async def generate_questions_endpoint(request: QuestionGenerationRequest) -> List[Dict[str, str]]:
+    """Mock endpoint for generating questions from content."""
+    return generate_questions(request)
+
+@app.post("/v1/chat/completions")
+async def chat_completions_endpoint(request: ChatCompletionRequest) -> Dict[str, Any]:
+    """Mock endpoint for chat completions API."""
+    return chat_completions(request)
 
 def start_server():
     """Start the mock server."""
