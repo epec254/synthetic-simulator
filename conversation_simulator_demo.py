@@ -67,6 +67,7 @@ def get_agent_callable(
 ) -> Callable[[List[Dict[str, str]]], Dict[str, Any]]:
     """
     Build a chat completion function that uses a logged MLflow model.
+    This is passed to `SyntheticDataSimulatorService(chat_agent_callable=...)`
 
     Args:
         model_info: ModelInfo object returned from log_model()
