@@ -1,4 +1,4 @@
-# Chat Service
+# Synthetic Converastion Simulator
 
 A Python utility for generating dynamic multi-turn conversations using [Agent Evaluation's Synthetic Generation API](https://docs.databricks.com/en/generative-ai/agent-evaluation/synthesize-evaluation-set.html). This utility simulates user interactions with your Agent's model using Agent Evaluation's Synthetic Generation API to dynamically generate follow-up questions.
 
