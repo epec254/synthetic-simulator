@@ -5,6 +5,7 @@ Main service module for handling chat interactions.
 from typing import Dict, Any, Optional, List, Callable
 from pathlib import Path
 import json
+from .logging_config import logger
 
 
 class EmptyContextError(Exception):
@@ -26,6 +27,7 @@ class ChatService:
         output_file: str = "conversation_history.jsonl",
         agent_description: Optional[str] = None,
         use_last_context_if_cannot_generate_context: bool = False,
+        tag: Optional[str] = None,
     ):
         """
         Initialize the ChatService.
@@ -39,6 +41,7 @@ class ChatService:
             output_file: Path to save the conversation history
             agent_description: Optional description for question generation
             use_last_context_if_cannot_generate_context: If True, use the last valid context when no new context can be extracted
+            tag: Optional tag to add to each saved conversation turn
         """
         self.chat_agent_callable = chat_agent_callable
         self.question_generator_callable = question_generator_callable
@@ -50,13 +53,19 @@ class ChatService:
         self.output_file = output_file
         self.agent_description = agent_description
         self.use_last_context_on_empty = use_last_context_if_cannot_generate_context
+        self.tag = tag
         self.conversation_history: List[Dict[str, str]] = []
         self.question_history: List[str] = []
         self.last_chat_response = None
         self.last_valid_context: Optional[str] = None
 
-    def save_conversation_turn(self):
-        """Save the current conversation turn to the JSONL file."""
+    def save_conversation_turn(self, tag: Optional[str] = None):
+        """
+        Save the current conversation turn to the JSONL file.
+
+        Args:
+            tag: Optional tag to add to the output record. If not provided, uses the service's default tag if set.
+        """
         with open(self.output_file, "a") as f:
             # Create a record with messages array (excluding last assistant message) and separate assistant response
             messages = (
@@ -70,6 +79,10 @@ class ChatService:
                     self.conversation_history[-1] if self.conversation_history else None
                 ),
             }
+            # Use provided tag or fall back to service tag
+            record_tag = tag if tag is not None else self.tag
+            if record_tag:
+                record["tag"] = record_tag
             json.dump(record, f)
             f.write("\n")
 
@@ -182,23 +195,23 @@ class ChatService:
         # Handle first turn with seed question separately
         try:
             question = self.generate_next_question()  # This will return seed question
-            print(f"Initial turn: Asking seed question: {question}")
+            logger.info(f"Initial turn: Asking seed question: {question}")
             response_and_trace = self.call_chat_agent(question)
-            print(f'Answer: {response_and_trace["message"]}')
+            logger.info(f'Answer: {response_and_trace["message"]}')
         except Exception as e:
-            print(f"Error during initial turn: {str(e)}")
+            logger.error(f"Error during initial turn: {str(e)}")
             return
 
         # Continue with remaining turns
         for turn in range(self.max_turns):
             try:
                 question = self.generate_next_question()
-                print(f"Turn {turn + 1}: Asking question: {question}")
+                logger.info(f"Turn {turn + 1}: Asking question: {question}")
                 response_and_trace = self.call_chat_agent(question)
-                print(f'Answer: {response_and_trace["message"]}')
+                logger.info(f'Answer: {response_and_trace["message"]}')
             except EmptyContextError as e:
-                print(f"Conversation stopped: {str(e)}")
+                logger.warning(f"Conversation stopped: {str(e)}")
                 break
             except Exception as e:
-                print(f"Error during turn {turn + 1}: {str(e)}")
+                logger.error(f"Error during turn {turn + 1}: {str(e)}")
                 break

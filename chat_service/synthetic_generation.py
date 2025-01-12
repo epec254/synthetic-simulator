@@ -31,8 +31,6 @@ def generate_next_question_using_context_from_previous_turn(
 Generate questions that are diverse and different from this list of previously asked questions:
 {previous_questions}"""
 
-    print(previous_questions)
-
     doc = Document(content=context_from_last_chat_turn, doc_uri="test.txt")
     questions = evals_client.generate_questions(
         doc=doc,

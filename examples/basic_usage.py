@@ -4,10 +4,12 @@ Example usage of the ChatService with custom API implementations.
 
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv()
 
 
+import logging
 from typing import Callable, Dict, Any, List
 from chat_service import ChatService
 from pathlib import Path
@@ -22,6 +24,9 @@ from chat_service.context_generators import (
 from chat_service.synthetic_generation import (
     generate_next_question_using_context_from_previous_turn,
 )
+
+# Setup logger
+logger = logging.getLogger("chat_service.examples")
 
 
 def log_model(
@@ -86,18 +91,28 @@ def get_agent_callable(
     return call_mlflow_logged_agent
 
 
-def generate_based_on_tool_outputs():
+def generate_based_on_tool_outputs(
+    max_turns: int,
+    model_info: mlflow.models.model.ModelInfo,
+    output_file: str,
+    seed_question: str,
+    agent_description: str,
+    tag: str,
+):
     """
     Synthetically generates follow-up questions based on the outputs from all called tools.
-    """
-    # Create output directory
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / "conversation_history.jsonl"
 
-    model_info = log_model(
-        agent_code_file=str(Path(__file__).parent / "fc_agent.py"),
-        agent_config=DEFAULT_CONFIG,
+    Args:
+        max_turns: Maximum number of conversation turns
+        model_info: ModelInfo object returned from log_model()
+        output_file: Path to the output file for conversation history
+        seed_question: Initial question to start the conversation
+        agent_description: Description of the chat agent
+        tag: Tag for the generation type
+    """
+
+    logger.info(
+        f"Starting synthetic generation with {max_turns} turns based on tool outputs"
     )
 
     chat_completion_callable = get_agent_callable(model_info)
@@ -106,34 +121,43 @@ def generate_based_on_tool_outputs():
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_all_tool_outputs_from_agent_trace,
-        max_turns=5,
-        seed_question="what is lakehouse monitoring?",
-        output_file=str(output_file),
-        agent_description="A chat agent that answers questions about Databricks documentation.",
+        max_turns=max_turns,
+        seed_question=seed_question,
+        output_file=output_file,
+        agent_description=agent_description,
+        tag=tag,
     )
 
     # Start the conversation
     try:
         chat_service.start_conversation()
-        print(f"\nConversation history saved to: {output_file}")
-    except KeyboardInterrupt:
-        print("\nStopping chat service...")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"Error during conversation: {e}")
+        raise
 
 
-def generate_based_on_response():
+def generate_based_on_response(
+    max_turns: int,
+    model_info: mlflow.models.model.ModelInfo,
+    output_file: str,
+    seed_question: str,
+    agent_description: str,
+    tag: str,
+):
     """
     Synthetically generates follow-up questions based on the agent's last response.
-    """
-    # Create output directory
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / "conversation_history.jsonl"
 
-    model_info = log_model(
-        agent_code_file=str(Path(__file__).parent / "fc_agent.py"),
-        agent_config=DEFAULT_CONFIG,
+    Args:
+        max_turns: Maximum number of conversation turns
+        model_info: ModelInfo object returned from log_model()
+        output_file: Path to the output file for conversation history
+        seed_question: Initial question to start the conversation
+        agent_description: Description of the chat agent
+        tag: Tag for the generation type
+    """
+
+    logger.info(
+        f"Starting synthetic generation with {max_turns} turns based on response content"
     )
 
     chat_completion_callable = get_agent_callable(model_info)
@@ -142,25 +166,45 @@ def generate_based_on_response():
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_agent_response_from_trace,
-        max_turns=5,
-        seed_question="what is lakehouse monitoring?",
-        output_file=str(output_file),
-        agent_description="A chat agent that answers questions about Databricks documentation.",
+        max_turns=max_turns,
+        seed_question=seed_question,
+        output_file=output_file,
+        agent_description=agent_description,
+        tag=tag,
     )
 
     # Start the conversation
     try:
         chat_service.start_conversation()
-        print(f"\nConversation history saved to: {output_file}")
-    except KeyboardInterrupt:
-        print("\nStopping chat service...")
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"Error during conversation: {e}")
+        raise
 
 
 def main():
-    # generate_based_on_tool_outputs()
-    generate_based_on_response()
+    # Create output directory
+    output_dir = Path("output")
+    output_dir.mkdir(exist_ok=True)
+    output_file = str(output_dir / "synthetic_evaluation_set.jsonl")
+
+    # Log the model
+    model_info = log_model(
+        agent_code_file=str(Path(__file__).parent / "fc_agent.py"),
+        agent_config=DEFAULT_CONFIG,
+    )
+
+    # Common parameters
+    params = {
+        "max_turns": 2,
+        "model_info": model_info,
+        "output_file": output_file,
+        "seed_question": "what is lakehouse monitoring?",
+        "agent_description": "A chat agent that answers questions about Databricks documentation.",
+    }
+
+    # Run both types of generation with different tags
+    generate_based_on_tool_outputs(**params, tag="tool_outputs")
+    generate_based_on_response(**params, tag="agent_response")
 
 
 if __name__ == "__main__":
