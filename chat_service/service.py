@@ -59,7 +59,7 @@ class SyntheticDataSimulatorService:
         self.last_chat_response = None
         self.last_valid_context: Optional[str] = None
 
-    def save_conversation_turn(self, tag: Optional[str] = None):
+    def save_conversation_turn(self, first_turn: bool = False):
         """
         Save the current conversation turn to the JSONL file.
 
@@ -80,19 +80,17 @@ class SyntheticDataSimulatorService:
                 ),
                 "context_used_to_generate_next_question": self.last_valid_context,
             }
-            # Use provided tag or fall back to service tag
-            record_tag = tag if tag is not None else self.tag
+
             # Add special tag for first turn based on seed question
-            if (
-                len(self.conversation_history) == 1
-                and self.conversation_history[0]["role"] == "assistant"
-            ):
+            if first_turn:
                 record["first_turn"] = True
                 record["seed_question"] = self.seed_question
             else:
                 record["first_turn"] = False
-            if record_tag:
-                record["tag"] = record_tag
+
+            # add tag if provided
+            if self.tag:
+                record["tag"] = self.tag
             json.dump(record, f)
             f.write("\n")
 
@@ -149,7 +147,9 @@ class SyntheticDataSimulatorService:
 
         return next_question
 
-    def call_chat_agent(self, question: str) -> Dict[str, Any]:
+    def call_chat_agent(
+        self, question: str, first_turn: bool = False
+    ) -> Dict[str, Any]:
         """
         Send a question to the chat agent callable and get the response.
 
@@ -181,7 +181,7 @@ class SyntheticDataSimulatorService:
         self.last_chat_response = response
 
         # Save this turn to the JSONL file
-        self.save_conversation_turn()
+        self.save_conversation_turn(first_turn)
 
         return {"message": assistant_message, "trace": output_trace}
 
@@ -206,7 +206,7 @@ class SyntheticDataSimulatorService:
         try:
             question = self.generate_next_question()  # This will return seed question
             logger.info(f"Initial turn: Asking seed question: {question}")
-            response_and_trace = self.call_chat_agent(question)
+            response_and_trace = self.call_chat_agent(question, first_turn=True)
             logger.info(f'Answer: {response_and_trace["message"]}')
         except Exception as e:
             logger.error(f"Error during initial turn: {str(e)}")
