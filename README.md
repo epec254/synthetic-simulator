@@ -231,11 +231,24 @@ def get_context_from_chat_agent_response_for_next_turn_callable(
     """
 ```
 
-The service provides default implementations for these callables in:
-- `simulator_service.context_generators`: Contains `get_all_tool_outputs_from_agent_trace` and `get_agent_response_from_trace`
-- `simulator_service.synthetic_generation`: Contains `generate_next_question_using_context_from_previous_turn`
 
-See `conversation_simulator_demo.py` for complete implementation examples.
+### SyntheticDataSimulatorService
+
+Main class for generating synthetic conversations in `simulator_service.service`:
+
+```python
+SyntheticDataSimulatorService(
+    chat_agent_callable: Callable,          # Function that calls the agent's MLflow model
+    question_generator_callable: Callable,   # Function that generates questions using Agent Evaluation API
+    get_context_from_chat_agent_response_for_next_turn_callable: Callable,  # Function that extracts context from agent response
+    max_turns: int,                         # Maximum conversation turns
+    seed_question: str,                     # Initial question to start with
+    output_file: str = "conversation_history.jsonl",  # Where to save the conversation
+    agent_description: Optional[str] = None,          # Description of the agent for question generation
+    use_last_context_if_cannot_generate_context: bool = False,  # Fallback behavior for context extraction
+    tag: Optional[str] = None               # Optional tag for conversation turns
+)
+```
 
 ## Model Utilities
 
@@ -304,7 +317,6 @@ These utilities handle:
 - Loading MLflow models
 - Setting up the prediction context
 - Capturing MLflow traces during model invocation
-- Proper cleanup of resources
 
 Example usage in your chat agent callable:
 
@@ -327,7 +339,7 @@ def chat_agent_callable(messages):
     }
 ```
 
-## Troubleshooting
+# Troubleshooting
 
 Common issues and solutions:
 
@@ -344,32 +356,14 @@ Common issues and solutions:
    - Confirm MLFLOW_TRACKING_URI is set to "databricks"
    - Verify you have permission to create experiments in the specified path
 
-## API Documentation
 
-### SyntheticDataSimulatorService
-
-Main class for generating synthetic conversations:
-
-```python
-SyntheticDataSimulatorService(
-    chat_agent_callable: Callable,          # Function that calls the agent's MLflow model
-    question_generator_callable: Callable,   # Function that generates questions using Agent Evaluation API
-    get_context_from_chat_agent_response_for_next_turn_callable: Callable,  # Function that extracts context from agent response
-    max_turns: int,                         # Maximum conversation turns
-    seed_question: str,                     # Initial question to start with
-    output_file: str = "conversation_history.jsonl",  # Where to save the conversation
-    agent_description: Optional[str] = None,          # Description of the agent for question generation
-    use_last_context_if_cannot_generate_context: bool = False,  # Fallback behavior for context extraction
-    tag: Optional[str] = None               # Optional tag for conversation turns
-)
-```
 
 For detailed API documentation, see the docstrings in the source code.
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
+Contributions are welcome! Please submit a pull request with any improvements or bug fixes.
 
 ## License
 
-[Add your license information here]
+Your use of this code is governed by the [Databricks License](LICENSE).
