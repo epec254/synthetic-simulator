@@ -4,8 +4,6 @@ Example usage of the ChatService with custom API implementations.
 
 from dotenv import load_dotenv
 
-import simulator_service
-
 
 # Load environment variables
 load_dotenv()
@@ -119,7 +117,7 @@ def generate_based_on_tool_outputs(
 
     chat_completion_callable = get_agent_callable(model_info)
 
-    simulator_service = SyntheticDataSimulatorService(
+    chat_service = SyntheticDataSimulatorService(
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_all_tool_outputs_from_agent_trace,
@@ -164,7 +162,7 @@ def generate_based_on_response(
 
     chat_completion_callable = get_agent_callable(model_info)
 
-    simulator_service = SyntheticDataSimulatorService(
+    chat_service = SyntheticDataSimulatorService(
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_agent_response_from_trace,

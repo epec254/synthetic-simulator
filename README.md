@@ -20,7 +20,6 @@ See [`example_output.jsonl`](example_output.jsonl) for sample conversation outpu
 1. Clone the repository and install dependencies ([see Prerequisites](#prerequisites) for requirements):
 ```bash
 git clone <repository-url>
-cd chat-service
 poetry install
 ```
 
@@ -32,6 +31,12 @@ cp .env.sample .env
 
 3. Run the example ([see Usage](#usage) for full documentation):
 ```bash
+poetry run python conversation_simulator_demo.py
+```
+
+Alternatively, you can activate the poetry environment and run the example:
+```bash
+poetry shell
 python conversation_simulator_demo.py
 ```
 
@@ -117,10 +122,10 @@ For a complete working example with error handling and additional features, see 
 Here's a simplified version of the example:
 
 ```python
-from chat_service import SyntheticDataSimulatorService
+from simulator_service import SyntheticDataSimulatorService
 import mlflow
-from chat_service.context_generators import get_all_tool_outputs_from_agent_trace
-from chat_service.synthetic_generation import generate_next_question_using_context_from_previous_turn
+from simulator_service.context_generators import get_all_tool_outputs_from_agent_trace
+from simulator_service.synthetic_generation import generate_next_question_using_context_from_previous_turn
 from model_utils import invoke_model_with_trace
 
 # 1. Log your agent as an MLflow model
@@ -153,7 +158,7 @@ chat_service = SyntheticDataSimulatorService(
     agent_description="An AI assistant that helps with Databricks lakehouse monitoring" # helps tune the synthetic data generation to be aware of your agent's domain
 )
 
-chat_service.start_conversation()
+simulator_service.start_conversation()
 ```
 
 ## Examples
@@ -208,7 +213,7 @@ def question_generator_callable(context: str, agent_description: str) -> List[Di
 
 This callable extracts data from the agent's last response, which is then used as input to the Synthetic Generation API to generate the next conversation turn. 
 
-We provide two sample implementations in `chat_service.context_generators`:
+We provide two sample implementations in `simulator_service.context_generators`:
 - `get_agent_response_from_trace`: Uses just the agent's final response text
 - `get_all_tool_outputs_from_agent_trace`: Uses the outputs from all tools the agent called, providing richer context
 
@@ -233,8 +238,8 @@ def get_context_from_chat_agent_response_for_next_turn_callable(
 ```
 
 The service provides default implementations for these callables in:
-- `chat_service.context_generators`: Contains `get_all_tool_outputs_from_agent_trace` and `get_agent_response_from_trace`
-- `chat_service.synthetic_generation`: Contains `generate_next_question_using_context_from_previous_turn`
+- `simulator_service.context_generators`: Contains `get_all_tool_outputs_from_agent_trace` and `get_agent_response_from_trace`
+- `simulator_service.synthetic_generation`: Contains `generate_next_question_using_context_from_previous_turn`
 
 See `conversation_simulator_demo.py` for complete implementation examples.
 
