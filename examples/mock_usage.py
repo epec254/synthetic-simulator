@@ -28,7 +28,7 @@ def mock_chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
         messages=messages,
     )
     response = chat_completions(request)
-    
+
     # Create mock output trace
     output_trace = {
         "timestamp": "2025-01-12T11:49:10-08:00",
@@ -36,7 +36,7 @@ def mock_chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
         "tokens": {"prompt": 100, "completion": 30},
         "latency_ms": 200,
     }
-    
+
     return {
         "outputs": response,
         "output_trace": output_trace,
@@ -73,7 +73,7 @@ def mock_context_extractor(response_data: Dict[str, Any]) -> str:
     """
     # Get the assistant's message content
     content = response_data["outputs"]["choices"][0]["message"]["content"]
-    
+
     # For mock implementation, use the entire response as context
     return content
 
@@ -87,7 +87,7 @@ def main():
     chat_service = ChatService(
         chat_agent_callable=mock_chat_completion,
         question_generator_callable=mock_question_generator,
-        get_context_from_chat_agent_response=mock_context_extractor,
+        get_context_from_chat_agent_response_for_next_turn_callable=mock_context_extractor,
         max_turns=3,
         model="gpt-3.5-turbo",
         temperature=0.7,

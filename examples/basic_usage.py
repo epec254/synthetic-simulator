@@ -52,28 +52,32 @@ evals_client = _get_managed_evals_client()
 #     }
 
 
-def example_question_generator(
-    content: str,
-    num_questions: int,
+def generate_next_question_from_tool_outputs(
+    context_from_last_chat_turn: str,
+    previous_questions: List[str],
     agent_description: str = None,
-    question_guidelines: str = None,
 ) -> List[Dict[str, str]]:
     """
     Question generator using Databricks RAG evaluation.
 
     Args:
-        content: Text content to generate questions from
+        context_from_last_chat_turn: Context from the last chat turn
+        previous_questions: List of previous questions
         num_questions: Number of questions to generate
         agent_description: Optional description of the agent's role
-        question_guidelines: Optional guidelines for question generation
 
     Returns:
         List of dictionaries containing questions and their context
     """
-    doc = Document(content=content, doc_uri="test.txt")
+
+    question_guidelines = f"""Generate a question based on the provided context.
+Avoid this list of previously asked questions:
+{previous_questions}"""
+
+    doc = Document(content=context_from_last_chat_turn, doc_uri="test.txt")
     questions = evals_client.generate_questions(
         doc=doc,
-        num_questions=num_questions,
+        num_questions=1,
         agent_description=agent_description,
         question_guidelines=question_guidelines,
     )
@@ -107,7 +111,7 @@ def get_tool_call_outputs_as_sent_to_llm(trace):
     return tool_outputs
 
 
-def get_context_from_chat_agent_response(response_data: Dict[str, Any]) -> str:
+def get_all_tool_outputs(response_data: Dict[str, Any]) -> str:
     """
     Extract context from chat agent response for question generation.
 
@@ -122,7 +126,7 @@ def get_context_from_chat_agent_response(response_data: Dict[str, Any]) -> str:
     output_trace = response_data["output_trace"]
 
     tool_outputs = get_tool_call_outputs_as_sent_to_llm(output_trace)
-    print(f"Tool outputs: {tool_outputs}")
+    # print(f"Tool outputs: {tool_outputs}")
 
     # Extract message content
     content = outputs["choices"][0]["message"]["content"]
@@ -136,7 +140,7 @@ def get_context_from_chat_agent_response(response_data: Dict[str, Any]) -> str:
 
 
 from fc_agent import DEFAULT_CONFIG
-from model_utils import load_and_invoke_model
+from model_utils import invoke_model_with_trace
 
 import mlflow
 import mlflow.deployments
@@ -195,19 +199,14 @@ def build_chat_completion(
     Returns:
         Callable that implements chat completion API using the logged model
     """
+    # Load the model once when creating the completion function
+    loaded_model = mlflow.pyfunc.load_model(model_info.model_uri)
 
     def chat_completion(messages: List[Dict[str, str]]) -> Dict[str, Any]:
-        # # Get the last user message
-        # last_message = next(
-        #     (msg for msg in reversed(messages) if msg["role"] == "user"), None
-        # )
-        # if not last_message:
-        #     raise ValueError("No user message found")
-
-        print(messages)
-        # Load and invoke the model using the provided model info
-        outputs, output_trace = load_and_invoke_model(
-            model_info=model_info,
+        # print(messages)
+        # Use invoke_model_uri_with_trace with the cached model's URI
+        outputs, output_trace = invoke_model_with_trace(
+            model=loaded_model,
             model_input={"messages": messages},
         )
 
@@ -247,11 +246,12 @@ def main():
     # Create chat service instance with callable implementations
     chat_service = ChatService(
         chat_agent_callable=chat_completion_callable,
-        question_generator_callable=example_question_generator,
-        get_context_from_chat_agent_response=get_context_from_chat_agent_response,
-        max_turns=1,
-        initial_content="The pants are located in the basement and they are green",
+        question_generator_callable=generate_next_question_from_tool_outputs,
+        get_context_from_chat_agent_response_for_next_turn_callable=get_all_tool_outputs,
+        max_turns=5,
+        seed_question="what is lakehouse monitoring?",
         output_file=str(output_file),
+        agent_description="A chat agent that answers questions about Databricks documentation.",
     )
 
     # Start the conversation
