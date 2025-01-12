@@ -11,7 +11,7 @@ load_dotenv()
 
 import logging
 from typing import Callable, Dict, Any, List
-from chat_service import ChatService
+from chat_service import SyntheticDataSimulatorService
 from pathlib import Path
 import mlflow
 from mlflow.models.resources import DatabricksServingEndpoint
@@ -117,7 +117,7 @@ def generate_based_on_tool_outputs(
 
     chat_completion_callable = get_agent_callable(model_info)
 
-    chat_service = ChatService(
+    chat_service = SyntheticDataSimulatorService(
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_all_tool_outputs_from_agent_trace,
@@ -162,7 +162,7 @@ def generate_based_on_response(
 
     chat_completion_callable = get_agent_callable(model_info)
 
-    chat_service = ChatService(
+    chat_service = SyntheticDataSimulatorService(
         chat_agent_callable=chat_completion_callable,
         question_generator_callable=generate_next_question_using_context_from_previous_turn,
         get_context_from_chat_agent_response_for_next_turn_callable=get_agent_response_from_trace,
@@ -188,9 +188,22 @@ def main():
     output_file = str(output_dir / "synthetic_evaluation_set.jsonl")
 
     # Log the model
+    # We use a function-calling agent defined in fc_agent.py that queries databricks documentation through a keyword-based retriever tool.
+    # You can replace this with your own agent implementation.
+
+    agent_config = {
+        "endpoint_name": "ep-gpt4o-new",  # replace with a Model Serving endpoint that supports Chat Completions.  Can be an external model e.g., OpenAI
+        "temperature": 0.01,
+        "max_tokens": 1000,
+        "system_prompt": """You are a helpful assistant that answers questions about Databricks. Questions unrelated to Databricks are irrelevant.
+
+    You answer questions using a set of tools. If needed, you ask the user follow-up questions to clarify their request.
+    """,
+        "max_context_chars": 4096 * 4,
+    }
     model_info = log_model(
         agent_code_file=str(Path(__file__).parent / "fc_agent.py"),
-        agent_config=DEFAULT_CONFIG,
+        agent_config=agent_config,
     )
 
     # Common parameters

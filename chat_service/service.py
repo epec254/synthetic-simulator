@@ -14,7 +14,7 @@ class EmptyContextError(Exception):
     pass
 
 
-class ChatService:
+class SyntheticDataSimulatorService:
     def __init__(
         self,
         chat_agent_callable: Callable[[List[Dict[str, str]]], Dict[str, Any]],
@@ -78,9 +78,19 @@ class ChatService:
                 "response": (
                     self.conversation_history[-1] if self.conversation_history else None
                 ),
+                "context_used_to_generate_next_question": self.last_valid_context,
             }
             # Use provided tag or fall back to service tag
             record_tag = tag if tag is not None else self.tag
+            # Add special tag for first turn based on seed question
+            if (
+                len(self.conversation_history) == 1
+                and self.conversation_history[0]["role"] == "assistant"
+            ):
+                record["first_turn"] = True
+                record["seed_question"] = self.seed_question
+            else:
+                record["first_turn"] = False
             if record_tag:
                 record["tag"] = record_tag
             json.dump(record, f)

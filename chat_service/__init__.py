@@ -2,6 +2,6 @@
 Chat Service package for multi-turn conversations with Chat Agent API.
 """
 
-from .service import ChatService
+from .service import SyntheticDataSimulatorService
 
-__all__ = ['ChatService']
+__all__ = ["SyntheticDataSimulatorService"]
