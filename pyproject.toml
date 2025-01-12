@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "chat-service"
+name = "synthetic-service"
 version = "0.1.0"
-description = "A multi-turn chat service that interacts with Chat Agent API"
+description = "Synthetic converastion simulator"
 authors = ["User"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
