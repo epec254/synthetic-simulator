@@ -78,19 +78,21 @@ class SyntheticDataSimulatorService:
                 "response": (
                     self.conversation_history[-1] if self.conversation_history else None
                 ),
-                "context_used_to_generate_next_question": self.last_valid_context,
+                "metadata": {
+                    "context_used_to_generate_question": self.last_valid_context,
+                },
             }
 
             # Add special tag for first turn based on seed question
             if first_turn:
-                record["first_turn"] = True
-                record["seed_question"] = self.seed_question
+                record["metadata"]["first_turn"] = True
+                record["metadata"]["seed_question"] = self.seed_question
             else:
-                record["first_turn"] = False
+                record["metadata"]["first_turn"] = False
 
             # add tag if provided
             if self.tag:
-                record["tag"] = self.tag
+                record["metadata"]["tag"] = self.tag
             json.dump(record, f)
             f.write("\n")
 
