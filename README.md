@@ -86,6 +86,10 @@ Additional example files in the root directory include:
 - `fc_agent.py`: Example implementation of a function calling agent
 - `model_utils.py`: Utility functions for model interaction
 
+You can see example output in [`example_output.jsonl`](example_output.jsonl).
+
+For a complete working example with error handling and additional features, see `basic_usage.py`.
+
 Here's a simplified version of the example:
 
 ```python
@@ -127,8 +131,6 @@ chat_service = SyntheticDataSimulatorService(
 
 chat_service.start_conversation()
 ```
-
-For a complete working example with error handling and additional features, see `basic_usage.py`.
 
 ## Examples
 
