@@ -7,6 +7,12 @@ from pathlib import Path
 import json
 
 
+class EmptyContextError(Exception):
+    """Raised when no context could be extracted from the chat agent's response."""
+
+    pass
+
+
 class ChatService:
     def __init__(
         self,
@@ -19,6 +25,7 @@ class ChatService:
         seed_question: str,
         output_file: str = "conversation_history.jsonl",
         agent_description: Optional[str] = None,
+        use_last_context_if_cannot_generate_context: bool = False,
     ):
         """
         Initialize the ChatService.
@@ -31,6 +38,7 @@ class ChatService:
             seed_question: Initial question to start the conversation
             output_file: Path to save the conversation history
             agent_description: Optional description for question generation
+            use_last_context_if_cannot_generate_context: If True, use the last valid context when no new context can be extracted
         """
         self.chat_agent_callable = chat_agent_callable
         self.question_generator_callable = question_generator_callable
@@ -41,9 +49,11 @@ class ChatService:
         self.seed_question = seed_question
         self.output_file = output_file
         self.agent_description = agent_description
+        self.use_last_context_on_empty = use_last_context_if_cannot_generate_context
         self.conversation_history: List[Dict[str, str]] = []
         self.question_history: List[str] = []
         self.last_chat_response = None
+        self.last_valid_context: Optional[str] = None
 
     def save_conversation_turn(self):
         """Save the current conversation turn to the JSONL file."""
@@ -60,24 +70,50 @@ class ChatService:
 
         Returns:
             str: The next question to ask
+
+        Raises:
+            EmptyContextError: If no context could be extracted from the last response and use_last_context_if_cannot_generate_context is False,
+                             or if no previous context exists when use_last_context_if_cannot_generate_context is True
         """
         if not self.question_history:
             next_question = self.seed_question
             self.question_history.append(next_question)
-        else:
-            # Get context from the last response
-            last_response = self.last_chat_response
-            context = self.get_context_from_chat_agent_response(last_response)
+            return next_question
 
-            # Generate next question based on the context
-            questions = self.question_generator_callable(
-                context_from_last_chat_turn=context,
-                previous_questions=self.question_history,
-                agent_description=self.agent_description,
-            )
-            next_question = questions[0]["question"]
+        # Get context from the last response
+        last_response = self.last_chat_response
+        context = self.get_context_from_chat_agent_response(last_response)
 
+        # Check if context is empty
+        if not context:
+            if self.use_last_context_on_empty and self.last_valid_context:
+                context = self.last_valid_context
+            else:
+                error_msg = (
+                    "The last response had no context to generate another question from. "
+                    if self.last_valid_context is not None
+                    else "No context could be generated from the first response, and no previous context is available. "
+                )
+                error_msg += "Make sure your `get_context_from_chat_agent_response_for_next_turn_callable` is able to always return a context. "
+                error_msg += "This might be because you are relying on outputs in the trace that weren't present for some turns e.g., "
+                error_msg += (
+                    "you used tool outputs and the model didn't need to call any tools"
+                )
+                raise EmptyContextError(error_msg)
+
+        # Store the last valid context
+        if context:
+            self.last_valid_context = context
+
+        # Generate next question based on the context
+        questions = self.question_generator_callable(
+            context_from_last_chat_turn=context,
+            previous_questions=self.question_history,
+            agent_description=self.agent_description,
+        )
+        next_question = questions[0]["question"]
         self.question_history.append(next_question)
+
         return next_question
 
     def call_chat_agent(self, question: str) -> Dict[str, Any]:
@@ -119,6 +155,7 @@ class ChatService:
     def start_conversation(self) -> None:
         """
         Start a conversation loop for the specified number of turns.
+        Stops if an error occurs or if no context can be generated.
         """
         # Create output directory if it doesn't exist
         output_dir = Path(self.output_file).parent
@@ -149,6 +186,9 @@ class ChatService:
                 print(f"Turn {turn + 1}: Asking question: {question}")
                 response_and_trace = self.call_chat_agent(question)
                 print(f'Answer: {response_and_trace["message"]}')
+            except EmptyContextError as e:
+                print(f"Conversation stopped: {str(e)}")
+                break
             except Exception as e:
                 print(f"Error during turn {turn + 1}: {str(e)}")
                 break
