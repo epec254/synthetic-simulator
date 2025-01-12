@@ -16,7 +16,7 @@ from pathlib import Path
 import mlflow
 from mlflow.models.resources import DatabricksServingEndpoint
 from fc_agent import DEFAULT_CONFIG
-from model_utils import invoke_model_with_trace
+from chat_service.mlflow_utils import invoke_model_with_trace
 from chat_service.context_generators import (
     get_all_tool_outputs_from_agent_trace,
     get_agent_response_from_trace,
