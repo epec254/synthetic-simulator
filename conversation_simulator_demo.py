@@ -1,5 +1,5 @@
 """
-Example usage of the ChatService with custom API implementations.
+Example usage of the SyntheticDataSimulatorService class.
 """
 
 from dotenv import load_dotenv
