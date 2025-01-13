@@ -17,7 +17,6 @@ from simulator_service import SyntheticDataSimulatorService
 from pathlib import Path
 import mlflow
 from mlflow.models.resources import DatabricksServingEndpoint
-from fc_agent import DEFAULT_CONFIG
 from simulator_service.mlflow_utils import invoke_model_with_trace
 from simulator_service.context_generators import (
     get_all_tool_outputs_from_agent_trace,
