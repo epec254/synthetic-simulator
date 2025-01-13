@@ -17,9 +17,19 @@ See [`example_output.jsonl`](example_output.jsonl) for sample conversation outpu
 
 ## Quickly Getting Started
 
+### Using a Databricks Notebook
+
+1. Clone the repository into your workspace:
+    - New -> More -> Git Folder -> paste in `https://github.com/epec254/synthetic-simulator`
+2. Open the Notebook [`conversation_simulator_demo_notebook.ipynb`](conversation_simulator_demo_notebook.ipynb) 
+3. Connect to Serverless compute or DBR/MLR 15.4+ classic compute
+4. Press Run All
+
+### Using a local IDE
+
 1. Clone the repository and install dependencies ([see Prerequisites](#prerequisites) for requirements):
 ```bash
-git clone <repository-url>
+git clone https://github.com/epec254/synthetic-simulator
 poetry install
 ```
 
@@ -45,36 +55,28 @@ See the [Configuration](#configuration) section for detailed setup instructions.
 ## Prerequisites
 
 Before you begin, ensure you have:
-- Python 3.11 or higher installed
-- A Databricks workspace account
-- Poetry (Python package manager)
 - Basic understanding of MLflow
+- A Databricks workspace account
+- If using a local IDE
+    - Poetry (Python package manager)
+    - Python 3.11 or higher installed
+- If using a Databricks Notebook
+    - Serverless compute or MLR/DBR 15.4+
 
 ### Installing Poetry
 
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
+Follow the Poetry Installation [instructions](https://python-poetry.org/docs/#installing-with-pipx)
 
 Verify the installation:
 ```bash
 poetry --version
 ```
 
-## Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd chat-service
-```
 
-2. Install dependencies using Poetry:
-```bash
-poetry install
-```
+## Configuration: only required for using in a Local IDE
 
-## Configuration
+**Not required if running from a Databricks Notebook**
 
 ### 1. Databricks Setup
 
@@ -106,7 +108,7 @@ MLFLOW_EXPERIMENT_NAME=/Users/<email>/chat-service-experiment  # Your MLflow exp
 
 ## Usage
 
-The easiest way to get started is to use `conversation_simulator_demo.py` in the root directory. This example shows how to:
+The easiest way to get started is to use `conversation_simulator_demo.py` (from a Local IDE) or `conversation_simulator_demo_notebook.py` (from a Databricks Notebook) in the root directory. These files are the same, except one is designed as a Notebook and the other as a executable script.  This example shows how to:
 1. Log your agent as an MLflow model
 2. Create the required callables using provided utility functions
 3. Set up and run the synthetic data generation
